@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - id: 24.10
+          - id: "24.10"
             arch: aarch64_cortex-a53
             sdk_url_path: https://downloads.openwrt.org/releases/24.10.2/targets/mediatek/filogic
             sdk_name: -sdk-24.10.2-mediatek-filogic_
@@ -113,7 +113,17 @@ jobs:
             cp "$f" "${{ github.workspace }}/${base%.*}-${{ matrix.arch }}.${base##*.}"
           done
           find "${{ github.workspace }}" -maxdepth 1 -type f \( -name "*.ipk" -o -name "*.apk" \) -exec ls -lh {} \;
+      - name: Upload Build Artifacts
+        if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.PACKAGE_NAME }}-${{ matrix.arch }}-${{ matrix.id }}
+          path: |
+            *.ipk
+            *.apk
+          if-no-files-found: error
       - name: Release and Upload Assets
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -125,6 +135,7 @@ jobs:
   notify:
     name: Notify Release Publish
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
     env:
       TRIGGER_URL: ${{ secrets.TRIGGER_URL }}
       TRIGGER_TOKEN: ${{ secrets.TRIGGER_TOKEN }}
